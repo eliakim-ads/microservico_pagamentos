@@ -96,3 +96,138 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+
+# Microserviço de Pagamentos — Sistema de Gestão Hoteleira
+
+## Sobre o projeto
+
+Microserviço responsável pelo gerenciamento de pagamentos de reservas de um sistema de gestão hoteleira.
+
+Desenvolvido como parte do Projeto Integrador V, utilizando arquitetura de microserviços.
+
+## Tecnologias utilizadas
+
+- Node.js
+- NestJS
+- TypeScript
+- Prisma ORM 6
+- MySQL
+- Bruno (testes de API)
+- Git e GitHub
+
+## Funcionalidades implementadas
+
+- Cadastro de pagamentos vinculados a reservas.
+- Consulta de pagamentos cadastrados.
+- Geração automática de identificadores UUID.
+- Validação dos dados recebidos pela API.
+- Cálculo do sinal de 30% sobre o valor da reserva.
+- Validação de pagamento integral (100%).
+- Restrição de cartão de crédito para SINAL e TOTAL.
+- Persistência de dados no MySQL.
+- Simulação temporária de reservas para testes.
+
+## Regras de negócio
+
+### Pagamento de sinal
+O cliente poderá pagar 30% do valor da reserva, exclusivamente com cartão de crédito.
+
+### Pagamento integral
+O cliente poderá pagar 100% do valor da reserva, exclusivamente com cartão de crédito.
+
+### Pagamento do saldo
+O saldo restante poderá ser pago no checkout utilizando:
+- Crédito
+- Débito
+- PIX
+- Dinheiro
+
+A implementação e os testes completos do cálculo do saldo estão em andamento.
+
+## Endpoints implementados
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | /pagamentos | Lista os pagamentos cadastrados |
+| POST | /pagamentos | Cria um pagamento com validações |
+
+## Exemplo de requisição
+
+POST /pagamentos
+
+```json
+{
+  "reserva_id": "550e8400-e29b-41d4-a716-446655440000",
+  "valor": 300.00,
+  "tipo": "SINAL",
+  "metodo": "CREDITO"
+}
+```
+
+## Status dos pagamentos
+
+- PENDENTE
+- APROVADO
+- RECUSADO
+- CANCELADO
+- ESTORNADO
+
+## Como executar
+
+Instalar as dependências:
+
+```bash
+npm install
+```
+
+Configurar a variável `DATABASE_URL` no arquivo `.env`, utilizando as credenciais do banco MySQL.
+
+Gerar o Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+Iniciar o servidor:
+
+```bash
+npm run start:dev
+```
+
+A API estará disponível em:
+
+http://localhost:3000
+
+## Testes
+
+As requisições foram testadas utilizando o Bruno.
+
+Cenários validados:
+- Listagem de pagamentos.
+- Cadastro de SINAL válido.
+- Rejeição de SINAL com valor incorreto.
+- Cadastro de TOTAL válido.
+- Rejeição de TOTAL com valor incorreto.
+- Rejeição de PIX para SINAL.
+- Rejeição de débito para TOTAL.
+
+## Funcionalidades em desenvolvimento
+
+- Cálculo e validação do saldo no checkout.
+- Integração com o microserviço de reservas.
+- Inclusão de serviços extras no cálculo.
+- Processamento simulado de pagamentos.
+- Atualização do status de pagamentos.
+- Emissão de faturas.
+- Consultas e relatórios financeiros.
+- Tratamento de pagamentos duplicados.
+
+## Observações
+
+Atualmente, os dados das reservas são simulados por meio do ReservaMockService.
+
+O banco MySQL armazena os pagamentos, enquanto a integração com os demais microserviços será implementada posteriormente.
+
+Este projeto é acadêmico e não realiza transações financeiras reais.

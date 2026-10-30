@@ -23,7 +23,7 @@ model fatura {
 }
 
 model pagamento {
-  id             String           @id @db.Char(36)
+  id             String           @id @default(uuid()) @db.Char(36)
   reserva_id     String           @db.Char(36)
   valor          Decimal          @db.Decimal(10, 2)
   tipo           pagamento_tipo
