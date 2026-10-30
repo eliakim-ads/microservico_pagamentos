@@ -1,0 +1,91 @@
+
+# =====================================
+# NESTJS / NODE.JS
+# =====================================
+
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+
+# =====================================
+# PRISMA
+# =====================================
+
+# Prisma Client gerado automaticamente
+generated/prisma/
+
+# Manter versionados:
+# prisma/schema.prisma
+# prisma.config.ts
+
+# =====================================
+# VARIAVEIS DE AMBIENTE
+# =====================================
+
+.env
+.env.*
+!.env.example
+
+# =====================================
+# LOGS
+# =====================================
+
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# =====================================
+# ARQUIVOS TEMPORARIOS
+# =====================================
+
+.temp/
+.tmp/
+*.tsbuildinfo
+
+# =====================================
+# SISTEMA OPERACIONAL
+# =====================================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =====================================
+# IDE / EDITORES
+# =====================================
+
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.launch
+.c9/
+
+# =====================================
+# RELATORIOS DO NODE.JS
+# =====================================
+
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# =====================================
+# ARQUIVOS DE EXECUCAO
+# =====================================
+
+pids/
+*.pid
+*.pid.lock
+*.seed
+*exe

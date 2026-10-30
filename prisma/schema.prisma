@@ -1,0 +1,64 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model fatura {
+  id           String        @id @db.Char(36)
+  codigo       String        @db.VarChar(36)
+  pagamento_id String        @unique(map: "uk_fatura_pagamento") @db.Char(36)
+  valor        Decimal       @db.Decimal(10, 2)
+  status       fatura_status @default(EMITIDA)
+  data_emissao DateTime      @default(now()) @db.DateTime(0)
+  pagamento    pagamento     @relation(fields: [pagamento_id], references: [id], onUpdate: Restrict, map: "fk_fatura_pagamento")
+
+  @@index([data_emissao], map: "idx_fatura_data")
+  @@index([status], map: "idx_fatura_status")
+}
+
+model pagamento {
+  id             String           @id @db.Char(36)
+  reserva_id     String           @db.Char(36)
+  valor          Decimal          @db.Decimal(10, 2)
+  tipo           pagamento_tipo
+  metodo         pagamento_metodo
+  status         pagamento_status @default(PENDENTE)
+  data_pagamento DateTime         @default(now()) @db.DateTime(0)
+  fatura         fatura?
+
+  @@index([data_pagamento], map: "idx_pagamento_data")
+  @@index([reserva_id], map: "idx_pagamento_reserva")
+  @@index([status], map: "idx_pagamento_status")
+}
+
+enum pagamento_tipo {
+  SINAL
+  TOTAL
+  SALDO
+}
+
+enum fatura_status {
+  EMITIDA
+  CANCELADA
+}
+
+enum pagamento_metodo {
+  CREDITO
+  DEBITO
+  PIX
+  DINHEIRO
+}
+
+enum pagamento_status {
+  PENDENTE
+  APROVADO
+  RECUSADO
+  CANCELADO
+  ESTORNADO
+}
