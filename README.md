@@ -101,72 +101,117 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 # Microserviço de Pagamentos — Sistema de Gestão Hoteleira
 
-## Sobre o projeto
+## 1. Sobre o projeto
 
-Microserviço responsável pelo gerenciamento de pagamentos de reservas de um sistema de gestão hoteleira.
+Microserviço desenvolvido em NestJS e TypeScript, responsável pelo gerenciamento de pagamentos de reservas em um sistema de gestão hoteleira.
 
-Desenvolvido como parte do Projeto Integrador V, utilizando arquitetura de microserviços.
+O projeto utiliza arquitetura de microserviços, permitindo que os serviços de Pagamentos, Reservas e demais funcionalidades sejam desenvolvidos de maneira independente e integrados posteriormente.
 
-## Tecnologias utilizadas
+## 2. Tecnologias utilizadas
 
 - Node.js
 - NestJS
 - TypeScript
 - Prisma ORM 6
 - MySQL
-- Bruno (testes de API)
-- Git e GitHub
+- Bruno — testes de API
+- Git e GitHub — controle de versionamento
 
-## Funcionalidades implementadas
+## 3. Funcionalidades implementadas
 
-- Cadastro de pagamentos vinculados a reservas.
-- Consulta de pagamentos cadastrados.
-- Geração automática de identificadores UUID.
+- Cadastro de pagamentos.
+- Listagem de pagamentos cadastrados.
+- Geração automática de UUID.
+- Associação de pagamentos a reservas por meio de `reserva_id`.
 - Validação dos dados recebidos pela API.
-- Cálculo do sinal de 30% sobre o valor da reserva.
-- Validação de pagamento integral (100%).
-- Restrição de cartão de crédito para SINAL e TOTAL.
-- Persistência de dados no MySQL.
-- Simulação temporária de reservas para testes.
+- Validação dos tipos e métodos de pagamento.
+- Restrição de cartão de crédito para pagamentos do tipo SINAL e TOTAL.
+- Persistência dos pagamentos no MySQL.
+- Status inicial PENDENTE para novos pagamentos.
 
-## Regras de negócio
+## 4. Regras de negócio
 
-### Pagamento de sinal
-O cliente poderá pagar 30% do valor da reserva, exclusivamente com cartão de crédito.
+O microserviço trabalha com três tipos de pagamento:
 
-### Pagamento integral
-O cliente poderá pagar 100% do valor da reserva, exclusivamente com cartão de crédito.
+| Tipo | Descrição |
+|---|---|
+| SINAL | Pagamento de 30% do valor da reserva |
+| TOTAL | Pagamento integral da reserva |
+| SALDO | Pagamento do valor restante no checkout |
 
-### Pagamento do saldo
-O saldo restante poderá ser pago no checkout utilizando:
-- Crédito
-- Débito
-- PIX
-- Dinheiro
+**Métodos de pagamento permitidos:**
 
-A implementação e os testes completos do cálculo do saldo estão em andamento.
+- SINAL: cartão de crédito.
+- TOTAL: cartão de crédito.
+- SALDO: crédito, débito, PIX ou dinheiro.
 
-## Endpoints implementados
+**Observação:** a conferência dos valores de 30%, 100% e saldo restante depende da integração com o microserviço de Reservas e ainda não está implementada.
+
+## 5. Estrutura do microserviço
+
+```text
+src/
+├── pagamento/
+│   ├── dto/
+│   │   └── create-pagamento.dto.ts
+│   ├── pagamento.controller.ts
+│   ├── pagamento.module.ts
+│   ├── pagamento.service.ts
+│   └── pagamento-validator.service.ts
+├── prisma/
+│   ├── prisma.module.ts
+│   └── prisma.service.ts
+├── app.module.ts
+└── main.ts
+```
+
+### Responsabilidades
+
+**PagamentoController:** recebe as requisições HTTP e encaminha as operações ao serviço.
+
+**PagamentoService:** coordena a criação e a consulta dos pagamentos, utilizando o Prisma para acessar o banco de dados.
+
+**PagamentoValidatorService:** concentra as validações das regras de negócio.
+
+**CreatePagamentoDto:** define os campos e as validações dos dados recebidos.
+
+**PrismaService:** disponibiliza a conexão com o banco de dados MySQL.
+
+## 6. Endpoints disponíveis
 
 | Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | /pagamentos | Lista os pagamentos cadastrados |
-| POST | /pagamentos | Cria um pagamento com validações |
+|---|---|---|
+| GET | `/pagamentos` | Lista os pagamentos |
+| POST | `/pagamentos` | Cadastra um pagamento |
 
-## Exemplo de requisição
-
-POST /pagamentos
+### Exemplo de requisição POST
 
 ```json
 {
-  "reserva_id": "550e8400-e29b-41d4-a716-446655440000",
-  "valor": 300.00,
+  "reserva_id": "550e8400-e29b-41d4-a716-446655440002",
+  "valor": 600,
   "tipo": "SINAL",
   "metodo": "CREDITO"
 }
 ```
 
-## Status dos pagamentos
+### Exemplo de resposta
+
+```json
+{
+  "id": "6693dbce-fd12-4dea-ad8f-c3dc3b87516a",
+  "reserva_id": "550e8400-e29b-41d4-a716-446655440002",
+  "valor": "600",
+  "tipo": "SINAL",
+  "metodo": "CREDITO",
+  "status": "PENDENTE",
+  "data_pagamento": "2026-11-06T20:39:09.000Z"
+}
+```
+
+## 7. Status de pagamento
+
+O banco de dados contempla os seguintes status:
 
 - PENDENTE
 - APROVADO
@@ -174,60 +219,81 @@ POST /pagamentos
 - CANCELADO
 - ESTORNADO
 
-## Como executar
+Atualmente, novos pagamentos são registrados com status PENDENTE. O processamento e a atualização automática dos status ainda não foram implementados.
 
-Instalar as dependências:
+## 8. Instalação e execução
+
+### Instalar as dependências
 
 ```bash
 npm install
 ```
 
-Configurar a variável `DATABASE_URL` no arquivo `.env`, utilizando as credenciais do banco MySQL.
+### Configurar o banco de dados
 
-Gerar o Prisma Client:
+Criar o arquivo `.env` na raiz do projeto e configurar a variável `DATABASE_URL` com as credenciais do MySQL.
+
+Não versionar o arquivo `.env`.
+
+### Gerar o Prisma Client
 
 ```bash
 npx prisma generate
 ```
 
-Iniciar o servidor:
+### Compilar o projeto
+
+```bash
+npm run build
+```
+
+### Iniciar a aplicação
 
 ```bash
 npm run start:dev
 ```
 
-A API estará disponível em:
+A API estará disponível em `http://localhost:3000`.
 
-http://localhost:3000
+## 9. Testes realizados
 
-## Testes
+Os testes foram executados utilizando o Bruno.
 
-As requisições foram testadas utilizando o Bruno.
+| Cenário | Resultado |
+|---|---|
+| Listagem de pagamentos | 200 OK |
+| Criação de pagamento válido | 201 Created |
+| Tentativa de SINAL com PIX | 400 Bad Request |
+| Consulta de pagamento persistido | 200 OK |
+| Compilação após refatoração | Sem erros |
 
-Cenários validados:
-- Listagem de pagamentos.
-- Cadastro de SINAL válido.
-- Rejeição de SINAL com valor incorreto.
-- Cadastro de TOTAL válido.
-- Rejeição de TOTAL com valor incorreto.
-- Rejeição de PIX para SINAL.
-- Rejeição de débito para TOTAL.
+## 10. Refatoração realizada
 
-## Funcionalidades em desenvolvimento
+Após revisão acadêmica, o microserviço passou por uma refatoração para melhorar a separação de responsabilidades.
 
-- Cálculo e validação do saldo no checkout.
-- Integração com o microserviço de reservas.
-- Inclusão de serviços extras no cálculo.
+Principais alterações:
+
+1. Remoção do `ReservaMockService`, que simulava informações de reservas.
+2. Criação do `PagamentoValidatorService`, responsável pelas regras de validação.
+3. Simplificação do `PagamentoService`, mantendo a criação e consulta de pagamentos.
+4. Atualização do `PagamentoModule` para registrar o novo serviço de validação.
+5. Realização de testes para verificar o funcionamento após as alterações.
+
+## 11. Funcionalidades pendentes
+
+- Integração com o microserviço de Reservas.
+- Validação dos valores de SINAL, TOTAL e SALDO com dados reais da reserva.
+- Integração com serviços extras.
 - Processamento simulado de pagamentos.
-- Atualização do status de pagamentos.
+- Atualização do status dos pagamentos.
 - Emissão de faturas.
-- Consultas e relatórios financeiros.
 - Tratamento de pagamentos duplicados.
+- Implementação das regras de estorno e cancelamento.
 
-## Observações
+## 12. Considerações finais
 
-Atualmente, os dados das reservas são simulados por meio do ReservaMockService.
+O microserviço de Pagamentos possui funcionalidades básicas de cadastro, consulta, validação e persistência implementadas e testadas.
 
-O banco MySQL armazena os pagamentos, enquanto a integração com os demais microserviços será implementada posteriormente.
+A refatoração realizada contribuiu para a organização do código e para a manutenção independente das regras de negócio.
 
-Este projeto é acadêmico e não realiza transações financeiras reais.
+O projeto encontra-se em desenvolvimento acadêmico e ainda não realiza transações financeiras reais.
