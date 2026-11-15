@@ -1,5 +1,6 @@
-// Controller será responsável por lidar com as requisições relacionadas a pagamentos.
-import { Body, Controller, Get, Post } from '@nestjs/common';
+// O controller de pagamento é responsável por receber as requisições HTTP relacionadas aos pagamentos,
+import {  Body,  Controller,  Get,  Param,  Patch,  Post,  ParseUUIDPipe,} from '@nestjs/common';
+
 import { PagamentoService } from './pagamento.service';
 import { CreatePagamentoDto } from './dto/create-pagamento.dto';
 
@@ -20,4 +21,23 @@ export class PagamentoController {
   async criarPagamento(@Body() dados: CreatePagamentoDto) {
     return this.pagamentoService.criarPagamento(dados);
   }
+
+  // PATCH /pagamentos/:id/cancelar
+  // Cancela um pagamento sem estorno
+  @Patch(':id/cancelar')
+  async cancelarPagamento(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.pagamentoService.cancelarPagamento(id);
+  }
+
+  // PATCH /pagamentos/:id/estornar
+  // Realiza o estorno simulado de um pagamento aprovado
+  @Patch(':id/estornar')
+  async estornarPagamento(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.pagamentoService.estornarPagamento(id);
+  }
+
 }

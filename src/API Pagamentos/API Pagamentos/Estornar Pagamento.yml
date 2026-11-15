@@ -1,0 +1,15 @@
+info:
+  name: Estornar Pagamento
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: http://localhost:3000/pagamentos/ec037a25-eab8-4cb0-ae1e-ebd0b48f9279/estornar
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

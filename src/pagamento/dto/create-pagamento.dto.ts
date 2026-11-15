@@ -2,10 +2,8 @@
 
 import {  IsEnum,  IsNotEmpty,  IsNumber,  IsPositive,  IsUUID,} from 'class-validator';
 // Importa os tipos de enumeração gerados pelo Prisma para validação dos campos tipo e metodo
-import {
-  pagamento_tipo,
-  pagamento_metodo,
-} from '../../../generated/prisma/client';
+import {  pagamento_tipo,  pagamento_metodo,} from '../../../generated/prisma/client';
+
 // Define a classe CreatePagamentoDto com os campos necessários para criar um pagamento
 export class CreatePagamentoDto {
 

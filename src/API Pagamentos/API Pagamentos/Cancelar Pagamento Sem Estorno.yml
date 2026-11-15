@@ -1,0 +1,15 @@
+info:
+  name: Cancelar Pagamento Sem Estorno
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: http://localhost:3000/pagamentos/6693dbce-fd12-4dea-ad8f-c3dc3b87516a/cancelar
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

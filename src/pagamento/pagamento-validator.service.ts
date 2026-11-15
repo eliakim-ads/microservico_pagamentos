@@ -34,7 +34,7 @@ export class PagamentoValidatorService {
             );
         }
 
-        // SINAL e TOTAL somente por cartão de crédito
+        // Se no ato da reserva vai pagar SINAL e TOTAL somente por cartão de crédito
         if (
             ['SINAL', 'TOTAL'].includes(dados.tipo) &&
             dados.metodo !== 'CREDITO'
@@ -44,4 +44,29 @@ export class PagamentoValidatorService {
             );
         }
     }
+
+
+    // Valida se o pagamento pode ser cancelado sem estorno
+    validarCancelamento(status: string): void {
+
+        // Somente pagamentos pendentes podem ser cancelados
+        if (status !== 'PENDENTE') {
+            throw new BadRequestException(
+                'Somente pagamentos com status PENDENTE podem ser cancelados sem estorno.',
+            );
+        }
+    }
+
+    // Valida se o pagamento pode receber estorno
+    validarEstorno(status: string): void {
+
+        // Somente pagamentos aprovados podem ser estornados
+        if (status !== 'APROVADO') {
+            throw new BadRequestException(
+                'Somente pagamentos com status APROVADO podem ser estornados.',
+            );
+        }
+    }
+
+
 }
