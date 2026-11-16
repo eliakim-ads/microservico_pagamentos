@@ -392,3 +392,94 @@ A documentação interativa foi disponibilizada por meio do Swagger, permitindo 
 A separação entre Controllers, Services e Validators facilita a manutenção, a organização das regras de negócio e a futura integração com os demais componentes do sistema hoteleiro.
 
 O projeto permanece em desenvolvimento acadêmico e **não realiza transações financeiras reais**.
+
+## 13. Containerização com Docker
+
+### Objetivo
+
+O microserviço de Pagamentos foi preparado para execução em contêiner Docker, permitindo sua implantação de maneira padronizada e independente dos demais microserviços do Sistema de Gestão Hoteleira.
+
+Cada microserviço do projeto possui seu próprio `Dockerfile` e `docker-compose.yml`. A integração entre os serviços será configurada posteriormente pela equipe.
+
+### Tecnologias utilizadas
+
+- Docker — execução da aplicação em contêiner.
+- Docker Compose — configuração e gerenciamento do contêiner.
+- Node.js 22 Alpine — imagem base.
+- NestJS — framework da aplicação.
+- Prisma ORM — acesso ao banco de dados.
+- MySQL externo — persistência dos dados.
+
+### Arquivos de configuração
+
+| Arquivo | Finalidade |
+|---|---|
+| `Dockerfile` | Define como construir a imagem da aplicação. |
+| `docker-compose.yml` | Configura o serviço, a porta e as variáveis de ambiente. |
+| `.dockerignore` | Exclui arquivos desnecessários e sensíveis da imagem. |
+| `.env` | Armazena as configurações de conexão com o banco de dados. |
+| `package.json` | Define os scripts de compilação e execução. |
+
+### Pré-requisitos
+
+- Docker Desktop instalado e em execução, ou Docker Engine com Docker Compose.
+- Acesso à rede do servidor MySQL.
+- Arquivo `.env` configurado na raiz do projeto.
+- Porta 3000 disponível, ou outra porta externa configurada.
+
+### Como executar com Docker
+
+**1.** Acessar a pasta do microserviço.
+
+**2.** Configurar o arquivo `.env` com a variável `DATABASE_URL`.
+
+**3.** Construir a imagem e iniciar o contêiner:
+
+```bash
+docker compose up --build -d
+```
+
+**4.** Verificar se o contêiner está em execução:
+
+```bash
+docker compose ps
+```
+
+**5.** Consultar os logs da aplicação:
+
+```bash
+docker compose logs -f pagamentos
+```
+
+**6.** Acessar a documentação Swagger:
+
+http://localhost:3000/api
+
+A porta de acesso deverá ser ajustada caso o mapeamento externo do Docker Compose seja alterado.
+
+### Comandos úteis
+
+| Comando | Finalidade |
+|---|---|
+| `docker compose up --build -d` | Construir e iniciar o contêiner. |
+| `docker compose up -d` | Iniciar utilizando a imagem existente. |
+| `docker compose ps` | Verificar o estado do serviço. |
+| `docker compose logs -f pagamentos` | Acompanhar os logs. |
+| `docker compose restart pagamentos` | Reiniciar o serviço. |
+| `docker compose down` | Parar e remover os contêineres do projeto. |
+
+### Banco de dados
+
+O microserviço utiliza um servidor MySQL externo. Por esse motivo, o Docker Compose não cria um contêiner de banco de dados.
+
+A conexão é realizada por meio da variável de ambiente `DATABASE_URL`, configurada no arquivo `.env`.
+
+O servidor deverá estar acessível pela rede utilizada na execução do contêiner.
+
+### Situação da implementação
+
+A configuração dos arquivos Docker foi preparada, e a aplicação NestJS foi compilada e executada com sucesso localmente em modo de produção.
+
+**A construção da imagem e a execução do contêiner ainda não foram validadas.** Esses testes serão realizados no ambiente da faculdade, quando o Docker estiver disponível.
+
+A integração com os demais microserviços e a configuração conjunta da infraestrutura permanecem pendentes.

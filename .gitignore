@@ -89,3 +89,9 @@ pids/
 *.pid.lock
 *.seed
 *exe
+
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
