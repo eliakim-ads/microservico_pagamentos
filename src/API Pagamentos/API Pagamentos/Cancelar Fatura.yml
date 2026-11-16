@@ -1,0 +1,15 @@
+info:
+  name: Cancelar Fatura
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: http://localhost:3000/faturas/a6da5707-f34b-47b6-9c72-46e94b230cca/cancelar
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
