@@ -403,7 +403,7 @@ O **API Gateway já encaminha e testa** as operações HTTP de Pagamentos e Fatu
 
 Após a definição do contrato de Reservas, o microserviço de Pagamentos deverá obter os dados necessários para validar os valores de SINAL, TOTAL e SALDO.
 
-### Funcionalidades pendentes
+### Funcionalidades pendentes (não necessárimente serão implementadas)
 
 - Integração com o microserviço de Reservas.
 - Validação dos valores de pagamento com base nos dados reais da reserva.
@@ -419,17 +419,9 @@ Após a definição do contrato de Reservas, o microserviço de Pagamentos dever
 - Tratamento de consistência entre a gravação no MySQL e a publicação de eventos (por exemplo, padrão Outbox).
 - Revisão das vulnerabilidades apontadas pelo `npm audit` antes de uso em produção.
 
-## 12. Considerações finais
 
-O microserviço disponibiliza funcionalidades de cadastro, listagem, cancelamento e estorno simulado de pagamentos, além de emissão e cancelamento de faturas. Essas operações foram integradas ao API Gateway e publicam eventos de domínio no RabbitMQ.
 
-A documentação interativa foi disponibilizada por meio do Swagger, permitindo consultar e testar os endpoints HTTP.
-
-A separação entre Controllers, Services, Validators e NotificacoesService facilita a manutenção, a organização das regras de negócio e a comunicação assíncrona com outros componentes do sistema hoteleiro.
-
-O projeto permanece em desenvolvimento acadêmico e **não realiza transações financeiras reais**.
-
-## 13. Containerização com Docker
+## 12. Containerização com Docker
 
 ### Objetivo
 
@@ -520,7 +512,7 @@ A configuração dos arquivos Docker foi preparada, e a aplicação NestJS foi c
 
 A integração HTTP com o API Gateway foi testada localmente. A orquestração conjunta de API Gateway, microserviço, RabbitMQ e demais serviços em Docker Compose ainda não foi validada.
 
-## 14. Mensageria e notificações com RabbitMQ
+## 13. Mensageria e notificações com RabbitMQ
 
 ### Arquitetura implementada
 
@@ -610,3 +602,14 @@ Nos testes realizados, a fila apresentou mensagens prontas e os logs confirmaram
 - **Confiabilidade:** implementar consumidor com confirmação manual (ack), retentativas, DLQ e idempotência.
 - **Segurança:** utilizar credenciais de ambiente e restringir o acesso ao painel e ao broker.
 - **Implantação:** validar a conectividade entre contêineres e revisar as URLs ao executar a aplicação via Docker Compose.
+
+
+## 14. Considerações finais
+
+O microserviço disponibiliza funcionalidades de cadastro, listagem, cancelamento e estorno simulado de pagamentos, além de emissão e cancelamento de faturas. Essas operações foram integradas ao API Gateway e publicam eventos de domínio no RabbitMQ.
+
+A documentação interativa foi disponibilizada por meio do Swagger, permitindo consultar e testar os endpoints HTTP.
+
+A separação entre Controllers, Services, Validators e NotificacoesService facilita a manutenção, a organização das regras de negócio e a comunicação assíncrona com outros componentes do sistema hoteleiro.
+
+O projeto permanece em desenvolvimento acadêmico e **não realiza transações financeiras reais**.
