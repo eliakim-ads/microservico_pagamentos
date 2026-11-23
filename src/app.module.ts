@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { PagamentoModule } from './pagamento/pagamento.module';
 import { FaturaModule } from './fatura/fatura.module';
+import { NotificacoesModule } from './notificacoes/notificacoes.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FaturaModule } from './fatura/fatura.module';
     PrismaModule,
     PagamentoModule,
     FaturaModule,
+    NotificacoesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

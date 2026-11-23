@@ -3,12 +3,14 @@ import { ConflictException, Injectable, NotFoundException, } from '@nestjs/commo
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { FaturaValidatorService } from './fatura-validator.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 
 @Injectable()
 export class FaturaService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly faturaValidator: FaturaValidatorService,
+        private readonly notificacoesService: NotificacoesService,
     ) { }
 
     // Emite uma fatura para um pagamento de SALDO aprovado   
@@ -56,6 +58,19 @@ export class FaturaService {
             },
         });
 
+
+        await this.notificacoesService.publicarEvento(
+            'fatura.emitida',
+            {
+                fatura_id: fatura.id,
+                codigo: fatura.codigo,
+                pagamento_id: fatura.pagamento_id,
+                valor: fatura.valor.toString(),
+                status: fatura.status,
+            },
+        );
+
+
         return {
             ...fatura,
             valor_total_reserva: valorTotalReserva ?? null,
@@ -79,12 +94,29 @@ export class FaturaService {
         this.faturaValidator.validarCancelamento(fatura.status);
 
         // Atualiza o status da fatura no MySQL
-        return this.prisma.fatura.update({
+
+        const faturaCancelada = await this.prisma.fatura.update({
             where: { id },
             data: {
                 status: 'CANCELADA',
             },
         });
+
+        // Publica o evento após cancelar a fatura
+        await this.notificacoesService.publicarEvento(
+            'fatura.cancelada',
+            {
+                fatura_id: faturaCancelada.id,
+                codigo: faturaCancelada.codigo,
+                pagamento_id: faturaCancelada.pagamento_id,
+                valor: faturaCancelada.valor.toString(),
+                status: faturaCancelada.status,
+            },
+        );
+
+        // Retorna a fatura cancelada
+        return faturaCancelada;
+
     }
 
 }

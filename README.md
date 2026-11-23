@@ -6,7 +6,7 @@ Microserviço desenvolvido com **NestJS e TypeScript**, responsável pelo gerenc
 
 O projeto adota uma arquitetura de microserviços, na qual Pagamentos, Reservas e demais serviços são desenvolvidos de forma independente.
 
-A integração com os demais microserviços ainda está em preparação. Está previsto o uso de um **API Gateway** como ponto de entrada do frontend. A forma de comunicação entre os microserviços será definida pela equipe.
+A integração HTTP com o **API Gateway** já foi implementada e testada: o Gateway atende em `http://localhost:3000` e encaminha as requisições de Pagamentos e Faturas ao microserviço, executado localmente em `http://localhost:3001`. A integração com Reservas e outros serviços permanece em planejamento.
 
 **Escopo acadêmico:** os pagamentos, cancelamentos e estornos são registrados ou simulados no banco de dados. Não existe integração com adquirentes, instituições bancárias ou gateways financeiros. Portanto, não ocorre movimentação real de dinheiro.
 
@@ -17,6 +17,9 @@ A integração com os demais microserviços ainda está em preparação. Está p
 - TypeScript
 - Prisma ORM 6
 - MySQL
+- RabbitMQ 4 (mensageria AMQP)
+- Docker Desktop (RabbitMQ em contêiner)
+- `@nestjs/microservices` 11, `amqplib` e `amqp-connection-manager`
 - Swagger / OpenAPI 3.0 — documentação interativa da API
 - Bruno — testes de endpoints
 - Prisma Studio — inspeção dos registros
@@ -51,6 +54,13 @@ A integração com os demais microserviços ainda está em preparação. Está p
 - Validação das regras de emissão e cancelamento.
 
 **Observação:** o valor total da reserva é atualmente recebido na requisição e apresentado na resposta da API. Esse campo não é persistido na tabela `fatura`, devido às restrições de alteração da estrutura do banco MySQL disponibilizado para o projeto.
+
+### Eventos de notificações (RabbitMQ)
+
+- Publicação assíncrona de eventos após operações bem-sucedidas no MySQL.
+- Eventos implementados: `pagamento.criado`, `pagamento.cancelado`, `pagamento.estornado`, `fatura.emitida` e `fatura.cancelada`.
+- Fila durável `notificacoes_pagamentos` e conexão AMQP por meio do `NotificacoesService`.
+- Os eventos são publicados, mas **ainda não existe consumidor para enviar notificações a hóspedes ou outros destinatários**.
 
 ### Documentação
 
@@ -123,6 +133,9 @@ src/
 │   ├── pagamento.module.ts
 │   ├── pagamento.service.ts
 │   └── pagamento-validator.service.ts
+├── notificacoes/
+│   ├── notificacoes.module.ts
+│   └── notificacoes.service.ts
 ├── prisma/
 │   ├── prisma.module.ts
 │   └── prisma.service.ts
@@ -140,6 +153,8 @@ src/
 - **FaturaService:** coordena emissão, cancelamento e persistência das faturas.
 - **FaturaValidatorService:** valida as regras de emissão e cancelamento.
 - **PrismaService:** disponibiliza o acesso ao MySQL.
+- **NotificacoesModule:** registra o cliente de transporte RabbitMQ e exporta o serviço de publicação.
+- **NotificacoesService:** conecta ao broker e publica eventos de domínio na fila.
 
 ## 6. Endpoints disponíveis
 
@@ -149,6 +164,7 @@ src/
 |---|---|---|
 | GET | `/pagamentos` | Lista os pagamentos cadastrados |
 | POST | `/pagamentos` | Cadastra um pagamento |
+| GET | `/pagamentos/reserva/:reserva_id` | Consulta pagamentos vinculados a uma reserva |
 | PATCH | `/pagamentos/:id/cancelar` | Cancela um pagamento pendente |
 | PATCH | `/pagamentos/:id/estornar` | Simula o estorno de um pagamento aprovado |
 
@@ -261,6 +277,7 @@ A aprovação automática e a integração com um provedor financeiro ainda não
 - Node.js e npm instalados.
 - Acesso a um banco MySQL compatível.
 - Variáveis de ambiente configuradas.
+- RabbitMQ acessível (para inicialização do cliente de notificações).
 
 ### Instalar dependências
 
@@ -274,9 +291,10 @@ Crie um arquivo `.env` na raiz do projeto e configure a variável:
 
 ```env
 DATABASE_URL="mysql://USUARIO:SENHA@HOST:3306/NOME_DO_BANCO"
+RABBITMQ_URL="amqp://USUARIO_RMQ:SENHA_RMQ@localhost:5672"
 ```
 
-Substitua os valores de exemplo pelas credenciais do ambiente.
+Substitua os valores de exemplo pelas credenciais do ambiente. Para desenvolvimento local, `localhost:5672` é a porta AMQP do RabbitMQ. Se o NestJS também executar dentro de um contêiner, ajuste o host para o endereço alcançável a partir desse contêiner.
 
 **Segurança:** não versione o arquivo `.env` nem compartilhe credenciais de acesso.
 
@@ -298,15 +316,17 @@ npm run build
 npm run start:dev
 ```
 
-A API estará disponível, por padrão, em:
+Nos testes de integração local, o microserviço está disponível em:
 
-`http://localhost:3000`
+`http://localhost:3001`
+
+O API Gateway, executado separadamente, está disponível em `http://localhost:3000`. A porta efetiva depende da configuração de execução.
 
 ### Acessar o Swagger
 
 Abra no navegador:
 
-`http://localhost:3000/api`
+`http://localhost:3001/api`
 
 A interface permite consultar a documentação e executar requisições de teste.
 
@@ -339,6 +359,17 @@ Os endpoints foram testados utilizando Bruno e Swagger.
 | Emissão duplicada de fatura | 409 Conflict |
 | Listagem de pagamentos pelo Swagger | 200 OK |
 | Compilação do projeto | Sem erros |
+| Criação de pagamento via API Gateway | 201 Created |
+| Cancelamento de pagamento via API Gateway | 200 OK |
+| Estorno de pagamento via API Gateway | 200 OK |
+| Emissão de fatura via API Gateway | 201 Created |
+| Cancelamento de fatura via API Gateway | 200 OK |
+| Conexão NestJS → RabbitMQ | Confirmada nos logs e painel de administração |
+| Publicação `pagamento.criado` | Confirmada por log e mensagens na fila |
+| Publicação `pagamento.cancelado` | Implementada; confirmação individual do payload pendente |
+| Publicação `pagamento.estornado` | Confirmada por log |
+| Publicação `fatura.emitida` | Confirmada por log |
+| Publicação `fatura.cancelada` | Confirmada por log |
 
 Também foram documentados os códigos HTTP dos endpoints de faturas e pagamentos no Swagger.
 
@@ -359,16 +390,18 @@ Durante o desenvolvimento, o projeto passou pelas seguintes melhorias:
 9. Configuração do Swagger com `@nestjs/swagger` compatível com NestJS 11.
 10. Documentação dos endpoints, parâmetros e respostas HTTP.
 11. Realização de testes positivos e negativos com Bruno e Swagger.
+12. Integração HTTP dos endpoints com o API Gateway.
+13. Criação do `NotificacoesModule` e do `NotificacoesService`.
+14. Publicação dos cinco eventos de Pagamentos e Faturas no RabbitMQ.
+15. Validação das publicações com logs do NestJS e painel RabbitMQ.
 
-## 11. Integração prevista e funcionalidades pendentes
+## 11. Integrações e funcionalidades pendentes
 
-### Integração com Reservas e API Gateway
+### API Gateway e Reservas
 
-O frontend deverá acessar os microserviços por meio de um API Gateway.
+O **API Gateway já encaminha e testa** as operações HTTP de Pagamentos e Faturas, preservando os códigos de resposta do microserviço. A integração com o microserviço de Reservas ainda está pendente.
 
-Ainda será definido se a comunicação entre Pagamentos e Reservas também passará pelo Gateway ou ocorrerá por uma API interna.
-
-Após a definição do contrato de integração, o microsserviço de Pagamentos deverá obter os dados necessários da reserva para validar os valores de SINAL, TOTAL e SALDO.
+Após a definição do contrato de Reservas, o microserviço de Pagamentos deverá obter os dados necessários para validar os valores de SINAL, TOTAL e SALDO.
 
 ### Funcionalidades pendentes
 
@@ -381,15 +414,18 @@ Após a definição do contrato de integração, o microsserviço de Pagamentos 
 - Prevenção de cobranças duplicadas.
 - Obtenção automática do valor total da reserva para emissão da fatura.
 - Persistência do valor total da reserva, caso seja necessária e autorizada uma alteração do banco.
-- Definição e implementação do contrato de comunicação com o API Gateway.
+- Implementação do consumidor de eventos RabbitMQ e do envio efetivo de notificações.
+- Estratégia de retry, dead-letter queue, idempotência e confirmação de processamento das mensagens.
+- Tratamento de consistência entre a gravação no MySQL e a publicação de eventos (por exemplo, padrão Outbox).
+- Revisão das vulnerabilidades apontadas pelo `npm audit` antes de uso em produção.
 
 ## 12. Considerações finais
 
-O microsserviço disponibiliza funcionalidades de cadastro, listagem, cancelamento e estorno simulado de pagamentos, além de emissão e cancelamento de faturas.
+O microserviço disponibiliza funcionalidades de cadastro, listagem, cancelamento e estorno simulado de pagamentos, além de emissão e cancelamento de faturas. Essas operações foram integradas ao API Gateway e publicam eventos de domínio no RabbitMQ.
 
 A documentação interativa foi disponibilizada por meio do Swagger, permitindo consultar e testar os endpoints HTTP.
 
-A separação entre Controllers, Services e Validators facilita a manutenção, a organização das regras de negócio e a futura integração com os demais componentes do sistema hoteleiro.
+A separação entre Controllers, Services, Validators e NotificacoesService facilita a manutenção, a organização das regras de negócio e a comunicação assíncrona com outros componentes do sistema hoteleiro.
 
 O projeto permanece em desenvolvimento acadêmico e **não realiza transações financeiras reais**.
 
@@ -425,7 +461,7 @@ Cada microserviço do projeto possui seu próprio `Dockerfile` e `docker-compose
 - Docker Desktop instalado e em execução, ou Docker Engine com Docker Compose.
 - Acesso à rede do servidor MySQL.
 - Arquivo `.env` configurado na raiz do projeto.
-- Porta 3000 disponível, ou outra porta externa configurada.
+- Porta externa definida no `docker-compose.yml` disponível; no ambiente local testado, o Gateway usa 3000 e o microserviço usa 3001.
 
 ### Como executar com Docker
 
@@ -453,9 +489,9 @@ docker compose logs -f pagamentos
 
 **6.** Acessar a documentação Swagger:
 
-http://localhost:3000/api
+Acesse `http://localhost:PORTA_EXTERNA/api`, substituindo `PORTA_EXTERNA` pela porta publicada no `docker-compose.yml`.
 
-A porta de acesso deverá ser ajustada caso o mapeamento externo do Docker Compose seja alterado.
+**Nota:** a configuração de Docker Compose da aplicação ainda precisa ser revisada para acesso ao RabbitMQ a partir de contêineres.
 
 ### Comandos úteis
 
@@ -482,4 +518,95 @@ A configuração dos arquivos Docker foi preparada, e a aplicação NestJS foi c
 
 **A construção da imagem e a execução do contêiner ainda não foram validadas.** Esses testes serão realizados no ambiente da faculdade, quando o Docker estiver disponível.
 
-A integração com os demais microserviços e a configuração conjunta da infraestrutura permanecem pendentes.
+A integração HTTP com o API Gateway foi testada localmente. A orquestração conjunta de API Gateway, microserviço, RabbitMQ e demais serviços em Docker Compose ainda não foi validada.
+
+## 14. Mensageria e notificações com RabbitMQ
+
+### Arquitetura implementada
+
+```text
+Cliente / Bruno
+      | HTTP
+      v
+API Gateway (localhost:3000)
+      | HTTP
+      v
+Microserviço de Pagamentos (localhost:3001)
+      |-- Prisma ORM --> MySQL externo
+      |
+      `-- NotificacoesService --> RabbitMQ (localhost:5672)
+                                    |
+                                    `-- fila: notificacoes_pagamentos
+                                         |
+                                         `-- Consumidor de notificações (PENDENTE)
+```
+
+O API Gateway encaminha as requisições HTTP ao microserviço. Após operações persistidas com sucesso, os serviços de Pagamentos e Faturas chamam o `NotificacoesService` para publicar um evento. O RabbitMQ recebe a mensagem na fila durável `notificacoes_pagamentos`.
+
+### Eventos publicados
+
+| Evento | Origem | Quando é publicado |
+|---|---|---|
+| `pagamento.criado` | `PagamentoService.criarPagamento()` | Após criar o pagamento |
+| `pagamento.cancelado` | `PagamentoService.cancelarPagamento()` | Após cancelar um pagamento pendente |
+| `pagamento.estornado` | `PagamentoService.estornarPagamento()` | Após registrar o estorno simulado |
+| `fatura.emitida` | `FaturaService.emitirFatura()` | Após emitir uma fatura válida |
+| `fatura.cancelada` | `FaturaService.cancelarFatura()` | Após cancelar a fatura |
+
+As validações de negócio permanecem nos respectivos `PagamentoValidatorService` e `FaturaValidatorService`. O módulo de notificações não determina se uma operação é permitida.
+
+### Formato da mensagem
+
+O método `publicarEvento(evento, dados)` envia um objeto com o nome do evento, os dados da operação e a data/hora da publicação. Exemplo ilustrativo:
+
+```json
+{
+  "evento": "pagamento.criado",
+  "dados": {
+    "pagamento_id": "550e8400-e29b-41d4-a716-446655440011",
+    "reserva_id": "550e8400-e29b-41d4-a716-446655440010",
+    "valor": "300",
+    "tipo": "SINAL",
+    "metodo": "CREDITO",
+    "status": "PENDENTE"
+  },
+  "data_hora": "2026-11-22T22:00:00.000Z"
+}
+```
+
+Os identificadores e o horário acima são ilustrativos. Os valores reais são gerados durante a execução.
+
+### Executar RabbitMQ localmente
+
+É necessário ter Docker Desktop em execução. O exemplo abaixo cria um broker local e publica as portas somente na interface de loopback:
+
+```bash
+docker run -d --name rabbitmq-pagamentos -p 127.0.0.1:5672:5672 -p 127.0.0.1:15672:15672 -e RABBITMQ_DEFAULT_USER=pagamentos -e RABBITMQ_DEFAULT_PASS=SENHA_LOCAL_FORTE -v rabbitmq_pagamentos_data:/var/lib/rabbitmq rabbitmq:4-management
+```
+
+Defina no `.env` a variável `RABBITMQ_URL` com as credenciais escolhidas. Evite credenciais fixas no código-fonte. Para contêiner já criado, utilize `docker start rabbitmq-pagamentos` em vez de executar novamente `docker run`.
+
+- **AMQP:** `localhost:5672`
+- **Painel RabbitMQ Management:** `http://localhost:15672`
+- **Fila:** `notificacoes_pagamentos`
+- **Tipo:** classic; declaração durável (`durable: true`)
+
+A durabilidade da fila não garante, por si só, a entrega final das notificações. Persistência de mensagens, tratamento de falhas e confirmações de consumo devem ser considerados na evolução da solução.
+
+### Verificar publicações
+
+1. Inicie o RabbitMQ e o microserviço com `npm run start:dev`.
+2. Confira o log `Conectado ao RabbitMQ com sucesso!`.
+3. Execute uma operação válida no Bruno por meio do API Gateway.
+4. Confira o log `Evento publicado: <nome-do-evento>`.
+5. No painel RabbitMQ, acesse **Queues and Streams → notificacoes_pagamentos** para verificar mensagens aguardando consumo.
+
+Nos testes realizados, a fila apresentou mensagens prontas e os logs confirmaram publicações dos eventos de criação, estorno, emissão e cancelamento de fatura. O evento de cancelamento de pagamento foi implementado; a inspeção individual de seu conteúdo ainda pode ser realizada como teste adicional.
+
+### Limitações e próximos passos
+
+- **Não há consumidor implementado:** mensagens ficam na fila, mas não geram e-mail, WhatsApp ou notificação ao hóspede.
+- **Consistência:** uma falha na publicação pode ocorrer depois da persistência no MySQL. O retorno HTTP pode indicar erro mesmo que a operação tenha sido gravada; considerar Outbox e tratamento de reprocessamento.
+- **Confiabilidade:** implementar consumidor com confirmação manual (ack), retentativas, DLQ e idempotência.
+- **Segurança:** utilizar credenciais de ambiente e restringir o acesso ao painel e ao broker.
+- **Implantação:** validar a conectividade entre contêineres e revisar as URLs ao executar a aplicação via Docker Compose.

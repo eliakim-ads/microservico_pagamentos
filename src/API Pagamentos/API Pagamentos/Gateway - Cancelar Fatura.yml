@@ -1,0 +1,16 @@
+info:
+  name: Gateway - Cancelar Fatura
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: http://localhost:3000/faturas/11fdcea1-6c61-4ad0-b430-2f01be6ac51c/cancelar
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+​

@@ -4,12 +4,14 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePagamentoDto } from './dto/create-pagamento.dto';
 import { PagamentoValidatorService } from './pagamento-validator.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 
 @Injectable()
 export class PagamentoService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly pagamentoValidator: PagamentoValidatorService,
+        private readonly notificacoesService: NotificacoesService,
     ) { }
 
     // Lista todos os pagamentos cadastrados
@@ -24,12 +26,40 @@ export class PagamentoService {
         this.pagamentoValidator.validarPagamento(dados);
 
         // Salva o pagamento no MySQL usando Prisma
-        return this.prisma.pagamento.create({
+        const pagamento = await this.prisma.pagamento.create({
             data: {
                 reserva_id: dados.reserva_id,
                 valor: dados.valor,
                 tipo: dados.tipo,
                 metodo: dados.metodo,
+            },
+        });
+
+        // Publica o evento no RabbitMQ após salvar o pagamento
+        await this.notificacoesService.publicarEvento(
+            'pagamento.criado',
+            {
+                pagamento_id: pagamento.id,
+                reserva_id: pagamento.reserva_id,
+                valor: pagamento.valor.toString(),
+                tipo: pagamento.tipo,
+                metodo: pagamento.metodo,
+                status: pagamento.status,
+            },
+        );
+
+        // Retorna o pagamento criado
+        return pagamento;
+    }
+
+    // Busca todos os pagamentos de uma reserva específica
+    async buscarPorReserva(reservaId: string) {
+        return this.prisma.pagamento.findMany({
+            where: {
+                reserva_id: reservaId,
+            },
+            orderBy: {
+                data_pagamento: 'desc',
             },
         });
     }
@@ -70,10 +100,27 @@ export class PagamentoService {
             );
         }
 
+        // Busca o pagamento atualizado
+        const pagamentoAtualizado =
+            await this.prisma.pagamento.findUnique({
+                where: { id },
+            });
+
+        // Publica o evento de cancelamento no RabbitMQ
+        if (pagamentoAtualizado) {
+            await this.notificacoesService.publicarEvento(
+                'pagamento.cancelado',
+                {
+                    pagamento_id: pagamentoAtualizado.id,
+                    reserva_id: pagamentoAtualizado.reserva_id,
+                    valor: pagamentoAtualizado.valor.toString(),
+                    status: pagamentoAtualizado.status,
+                },
+            );
+        }
+
         // Retorna o pagamento atualizado
-        return this.prisma.pagamento.findUnique({
-            where: { id },
-        });
+        return pagamentoAtualizado;
     }
 
     // Realiza o estorno simulado de um pagamento aprovado
@@ -112,10 +159,28 @@ export class PagamentoService {
             );
         }
 
+        // Busca o pagamento atualizado após o estorno
+        const pagamentoAtualizado =
+            await this.prisma.pagamento.findUnique({
+                where: { id },
+            });
+
+        // Publica o evento de estorno no RabbitMQ
+        if (pagamentoAtualizado) {
+            await this.notificacoesService.publicarEvento(
+                'pagamento.estornado',
+                {
+                    pagamento_id: pagamentoAtualizado.id,
+                    reserva_id: pagamentoAtualizado.reserva_id,
+                    valor: pagamentoAtualizado.valor.toString(),
+                    status: pagamentoAtualizado.status,
+                },
+            );
+        }
+
         // Retorna o pagamento atualizado
-        return this.prisma.pagamento.findUnique({
-            where: { id },
-        });
+        return pagamentoAtualizado;
+
     }
 
 

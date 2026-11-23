@@ -1,0 +1,15 @@
+info:
+  name: Gateway - Estornar Pagamento
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: http://localhost:3000/pagamentos/c747b217-051c-4148-9eb8-67d1d7ff6221/estornar
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

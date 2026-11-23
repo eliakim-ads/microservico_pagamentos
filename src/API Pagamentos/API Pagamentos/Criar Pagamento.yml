@@ -6,6 +6,16 @@ info:
 http:
   method: POST
   url: http://localhost:3000/pagamentos
+  body:
+    type: json
+    data: |
+      
+      {
+        "reserva_id": "550e8400-e29b-41d4-a716-446655440010",
+        "valor": 500,
+        "tipo": "SALDO",
+        "metodo": "PIX"
+      }
   auth: inherit
 
 settings:
@@ -13,4 +23,3 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
-​
