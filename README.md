@@ -489,7 +489,7 @@ docker compose logs -f pagamentos
 
 **6.** Acessar a documentação Swagger:
 
-Acesse `http://localhost:PORTA_EXTERNA/api`, substituindo `PORTA_EXTERNA` pela porta publicada no `docker-compose.yml`.
+Acesse `http://localhost:PORTA_EXTERNA/api`, substituindo `PORTA_EXTERNA` pela porta publicada no `docker-compose.yml`. http://localhost:3001/ ou 3000
 
 **Nota:** a configuração de Docker Compose da aplicação ainda precisa ser revisada para acesso ao RabbitMQ a partir de contêineres.
 
